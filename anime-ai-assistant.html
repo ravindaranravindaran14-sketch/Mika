@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#171326">
+  <title>Mika — AI Assistant</title>
+  <style>
+    :root { color-scheme: dark; --bg:#100e1b; --panel:#1b1830; --pink:#ff8fc8; --purple:#a78bfa; --text:#f7f2ff; --muted:#b8aecb; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; background:radial-gradient(circle at 50% 12%,#34234e 0,#171326 42%,#100e1b 100%); color:var(--text); font-family:system-ui,-apple-system,Segoe UI,sans-serif; display:flex; justify-content:center; }
+    .app { width:min(100%,720px); min-height:100vh; display:flex; flex-direction:column; padding:18px 16px 14px; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .brand { font-size:1.5rem; font-weight:800; letter-spacing:.4px; }
+    .status { color:var(--muted); font-size:.82rem; display:flex; align-items:center; gap:7px; }
+    .dot { width:9px;height:9px;border-radius:50%;background:#eab308;display:inline-block; }
+    .dot.online { background:#4ade80; box-shadow:0 0 10px #4ade80; }
+    .stage { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:16px 0; min-height:350px; }
+    .avatar-wrap { width:210px;height:230px; display:grid; place-items:center; position:relative; }
+    .glow { position:absolute; width:190px;height:190px;border-radius:50%;background:#c084fc26;filter:blur(20px); }
+    .avatar { width:154px;height:178px;position:relative; }
+    .hair-back { position:absolute;left:13px;top:8px;width:128px;height:160px;background:linear-gradient(135deg,#30204f,#17152b);border-radius:58% 58% 38% 38%;box-shadow:0 0 0 3px #7c5aa8; }
+    .hair-side { position:absolute;top:48px;width:38px;height:116px;background:linear-gradient(90deg,#211638,#594078);border-radius:60% 20% 70% 50%; }
+    .hair-side.left {left:4px;transform:rotate(8deg)} .hair-side.right {right:3px;transform:scaleX(-1) rotate(8deg)}
+    .face { position:absolute;left:31px;top:38px;width:94px;height:112px;background:linear-gradient(145deg,#ffe0dc,#f6bfc9);border-radius:46% 46% 48% 48%;z-index:2;box-shadow:inset 0 -7px 0 #eaa9b8; }
+    .bangs { position:absolute;left:25px;top:20px;width:106px;height:65px;background:linear-gradient(145deg,#493064,#20172f);border-radius:65% 55% 35% 25%;z-index:3;clip-path:polygon(0 0,100% 0,94% 78%,76% 56%,64% 100%,48% 59%,30% 91%,22% 58%,4% 85%); }
+    .eye { position:absolute;top:57px;width:10px;height:18px;background:#342344;border-radius:50%;z-index:4; }
+    .eye.left {left:53px}.eye.right {right:53px}
+    .shine {position:absolute;top:60px;left:57px;width:3px;height:5px;background:white;border-radius:50%;z-index:5}
+    .mouth {position:absolute;top:91px;left:73px;width:10px;height:5px;border-bottom:2px solid #a94e70;border-radius:50%;z-index:4}
+    .neck {position:absolute;top:137px;left:70px;width:22px;height:24px;background:#f2b7c4;z-index:1}
+    .body {position:absolute;top:153px;left:35px;width:88px;height:28px;background:linear-gradient(90deg,#8b5cf6,#d17bbd);border-radius:35px 35px 10px 10px;z-index:2}
+    h1 {font-size:1.35rem;margin:2px 0 4px}.subtitle {color:var(--muted);font-size:.9rem;text-align:center;margin:0}
+    .chat {background:#1b1830d9;border:1px solid #ffffff18;border-radius:20px;padding:12px;display:flex;flex-direction:column;gap:10px;min-height:210px;max-height:38vh;}
+    #messages {overflow-y:auto;display:flex;flex-direction:column;gap:9px;min-height:150px;}
+    .msg {max-width:88%;padding:10px 13px;border-radius:15px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere;font-size:.95rem}
+    .mika {align-self:flex-start;background:#302747;border-bottom-left-radius:5px}
+    .user {align-self:flex-end;background:linear-gradient(120deg,#7653b8,#a34e91);border-bottom-right-radius:5px}
+    .composer {display:flex;gap:8px}
+    input {min-width:0;flex:1;border:1px solid #ffffff24;background:#100e1b;color:white;border-radius:14px;padding:13px 14px;font-size:1rem;outline:none}
+    input:focus {border-color:var(--purple)}
+    button {border:0;border-radius:14px;padding:0 18px;background:linear-gradient(120deg,#a78bfa,#f08bc5);color:#21142c;font-weight:800;font-size:1rem}
+    button:disabled {opacity:.45}
+    .hint {font-size:.76rem;color:var(--muted);text-align:center;margin:8px 0 0}
+    @media(min-height:850px){.stage{padding:28px 0}.chat{max-height:34vh}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div class="brand">✦ Mika</div>
+      <div class="status"><span id="dot" class="dot"></span><span id="status">Connecting…</span></div>
+    </header>
+
+    <section class="stage" aria-label="Mika avatar">
+      <div class="avatar-wrap" aria-hidden="true">
+        <div class="glow"></div>
+        <div class="avatar">
+          <div class="hair-back"></div><div class="hair-side left"></div><div class="hair-side right"></div>
+          <div class="neck"></div><div class="body"></div><div class="face"></div><div class="bangs"></div>
+          <div class="eye left"></div><div class="eye right"></div><div class="shine"></div><div class="mouth"></div>
+        </div>
+      </div>
+      <h1>Mika</h1>
+      <p class="subtitle">Your AI companion · Always here to help</p>
+    </section>
+
+    <section class="chat">
+      <div id="messages" aria-live="polite">
+        <div class="msg mika">Hi! I'm Mika. Send me a message to get started. ✨</div>
+      </div>
+      <form id="form" class="composer">
+        <input id="message" type="text" placeholder="Message Mika…" autocomplete="off" aria-label="Message Mika">
+        <button id="send" type="submit">Send</button>
+      </form>
+    </section>
+    <p class="hint">Keep this page open while chatting. Your API key stays on the server, not in this file.</p>
+  </main>
+
+  <script>
+    // This must match the WebSocket route in your Render backend.
+    const WS_URL = "wss://mika-backend.onrender.com/ws/test-user";
+
+    const messages = document.getElementById("messages");
+    const input = document.getElementById("message");
+    const sendButton = document.getElementById("send");
+    const statusText = document.getElementById("status");
+    const statusDot = document.getElementById("dot");
+    let ws;
+    let waiting = false;
+
+    function setStatus(text, online = false) {
+      statusText.textContent = text;
+      statusDot.classList.toggle("online", online);
+    }
+
+    function addMessage(text, who) {
+      const bubble = document.createElement("div");
+      bubble.className = "msg " + who;
+      bubble.textContent = String(text ?? "");
+      messages.appendChild(bubble);
+      messages.scrollTop = messages.scrollHeight;
+      return bubble;
+    }
+
+    function connect() {
+      setStatus("Connecting…");
+      try {
+        ws = new WebSocket(WS_URL);
+        ws.onopen = () => setStatus("Connected", true);
+        ws.onmessage = (event) => {
+          waiting = false;
+          sendButton.disabled = false;
+          try {
+            const data = JSON.parse(event.data);
+            addMessage(data.reply ?? data.message ?? event.data, "mika");
+            if (data.action) addMessage("Action: " + data.action, "mika");
+          } catch {
+            addMessage(event.data, "mika");
+          }
+        };
+        ws.onerror = () => setStatus("Connection error");
+        ws.onclose = () => {
+          setStatus("Disconnected — retrying");
+          setTimeout(connect, 4000);
+        };
+      } catch (error) {
+        setStatus("Could not connect");
+      }
+    }
+
+    document.getElementById("form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const message = input.value.trim();
+      if (!message || !ws || ws.readyState !== WebSocket.OPEN || waiting) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) addMessage("Not connected yet. Please wait for the Connected status.", "mika");
+        return;
+      }
+      addMessage(message, "user");
+      ws.send(JSON.stringify({ message }));
+      input.value = "";
+      waiting = true;
+      sendButton.disabled = true;
+      setStatus("Mika is thinking…", true);
+    });
+
+    connect();
+  </script>
+</body>
+</html>
