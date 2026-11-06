@@ -50,7 +50,9 @@ In `anime-ai-assistant.html`, replace the `handleSend()` function's local
 `handleUserMessage()` call with a WebSocket call to this server:
 
 ```js
-const ws = new WebSocket("ws://localhost:8000/ws/your-user-id");
+const ws = new WebSocket(
+  "wss://mika-backend.onrender.com/ws/your-user-id"
+);
 ws.onmessage = (e) => {
   const { reply, action } = JSON.parse(e.data);
   say(reply);
